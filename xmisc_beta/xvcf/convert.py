@@ -28,6 +28,10 @@ import os
 import StringIO
 
 
+def logsave(x):
+  print("File saved: \n"+x)
+  return()
+
 def is_numeric(x,complex_allow=False):
   '''
   @examples
@@ -67,9 +71,9 @@ def get_colnames(
   ##
   if header:
     for i in xrange(skip):
-      next(_input)
+      _input.readline()
     ##
-    row=_input.readline().strip()
+    row=_input.readline()
     _row=row.rstrip("\n").split(sep)
     ret=_row
   else:
@@ -80,7 +84,7 @@ def get_colnames(
     _input.close()
   ##
   return(ret)
-      
+
 
 
 def txt_to_vcf(
@@ -99,6 +103,9 @@ def txt_to_vcf(
   info_sep=";",
   info_equ="="
   ):
+
+  # # print("inFpath:",inFpath)
+  # # print("outFpath:",outFpath)
 
   if sep_in is None:
     sys.exit("`sep_in` must be specified.")
@@ -136,7 +143,7 @@ def txt_to_vcf(
   if type(inFpath) in [type(StringIO.StringIO(""))]:
     _input=inFpath
   else:
-    _input=open(inFpath)
+    _input=open(inFpath,"r")
 
   ##
   if outFpath is None:
@@ -148,27 +155,29 @@ def txt_to_vcf(
   else:
     _output=open(outFpath,'w')
     
+  if header:
+    _skip=skip+1
+  else:
+    _skip=skip
     
   ## write before_header
   ## (TBA)
   ## write header
   _output.write("#%s\n" % sep_out.join(colnames_out))
 
-  ##
+  ## read and write
   _input.seek(0)
-  ##
-  for i in xrange(skip):
-    next(_input)
-  ##
-  if header:
-    next(_input)
-  ##
+  irow=0
   while True:
-    row=_input.readline().strip()
-    if not row:
+    rowi=_input.readline()
+    if not rowi:
       break
     ##
-    _row=row.split(sep_in)
+    irow+=1;
+    if irow<=_skip:
+      continue
+    ##  
+    _row=rowi.strip().split(sep_in)
     tmp=[_row[_colnames_mapping[k]] if k in _colnames_mapping and _colnames_mapping[k] is not None else "." for k in colnames_out]
     ##
     if not info_index is None:
@@ -181,7 +190,9 @@ def txt_to_vcf(
         tmp[info_index]=info_sep.join([tmp[info_index],_info])
     ##
     _output.write("%s\n" % sep_out.join(tmp))
+
   ##
+  ## 
   if type(_input)==type(StringIO.StringIO("")):
     print("input:")
     print(_input.getvalue())
@@ -191,17 +202,22 @@ def txt_to_vcf(
     print(_output.getvalue())
     print("")
   ##
+  ## 
   if not _input.closed:
     _input.close()
   ##
   if not _output.closed:
     _output.close()
   ##
-    
+  if outFpath is not None:
+    logsave(outFpath)
+  ## 
   return()
 
 
 if __name__ == "__main__":
+  # # inFpath="testfile.txt"
+  # # txt_to_vcf(inFpath=inFpath,outFpath=None,sep_in="\t",sep_out="\t",colnames_mapping={"CHROM":"Chr","POS":"Position","REF":"Ref","ALT":"Alt"})
 
   input=StringIO.StringIO(
     '''
